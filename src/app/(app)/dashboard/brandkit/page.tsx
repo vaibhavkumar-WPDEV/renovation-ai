@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,41 @@ const VOICE_TONES = [
 export default function BrandkitPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
-    // TODO Week 3: POST to /api/trpc/brandkit.upsert
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setError(null);
+
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      name: fd.get("name") as string,
+      license: fd.get("license") as string,
+      bio: fd.get("bio") as string,
+      primaryColor: fd.get("primaryColorHex") as string,
+      accentColor: fd.get("accentColorHex") as string,
+      voiceTone: fd.get("voiceTone") as string,
+    };
+
+    try {
+      const res = await fetch("/api/brandkit/upsert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? "Save failed");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -35,7 +61,7 @@ export default function BrandkitPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
         {/* Identity */}
         <Card>
           <CardHeader>
@@ -82,6 +108,12 @@ export default function BrandkitPage() {
                     name="primaryColor"
                     defaultValue="#0F172A"
                     className="h-10 w-10 cursor-pointer rounded border border-border"
+                    onChange={(e) => {
+                      const hex = formRef.current?.querySelector<HTMLInputElement>(
+                        '[name="primaryColorHex"]',
+                      );
+                      if (hex) hex.value = e.target.value;
+                    }}
                   />
                   <Input placeholder="#0F172A" name="primaryColorHex" defaultValue="#0F172A" />
                 </div>
@@ -94,6 +126,12 @@ export default function BrandkitPage() {
                     name="accentColor"
                     defaultValue="#F59E0B"
                     className="h-10 w-10 cursor-pointer rounded border border-border"
+                    onChange={(e) => {
+                      const hex = formRef.current?.querySelector<HTMLInputElement>(
+                        '[name="accentColorHex"]',
+                      );
+                      if (hex) hex.value = e.target.value;
+                    }}
                   />
                   <Input placeholder="#F59E0B" name="accentColorHex" defaultValue="#F59E0B" />
                 </div>
@@ -141,6 +179,9 @@ export default function BrandkitPage() {
               <span>Click to upload logo</span>
               <input type="file" accept="image/*" className="hidden" name="logo" />
             </label>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Logo upload to R2 storage coming in the next update.
+            </p>
           </CardContent>
         </Card>
 
@@ -148,9 +189,8 @@ export default function BrandkitPage() {
           <Button type="submit" disabled={saving} variant="default">
             {saving ? "Saving…" : "Save BrandKit"}
           </Button>
-          {saved && (
-            <span className="text-sm text-green-600">✓ Saved successfully</span>
-          )}
+          {saved && <span className="text-sm text-green-600">✓ Saved successfully</span>}
+          {error && <span className="text-sm text-red-600">{error}</span>}
         </div>
       </form>
     </div>
