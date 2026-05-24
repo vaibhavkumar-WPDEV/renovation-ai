@@ -1,12 +1,9 @@
 import { eq } from "drizzle-orm";
 import { inngest } from "../client";
 import { db } from "@/db/client";
-import { renders } from "@/db/schema";
+import { renders, photoUploads } from "@/db/schema";
 import { runRenderPipeline } from "@/lib/render/pipeline";
 
-/**
- * On `render/requested`, run the FLUX pipeline and update the render row.
- */
 export const processRender = inngest.createFunction(
   {
     id: "process-render",
@@ -16,12 +13,16 @@ export const processRender = inngest.createFunction(
   },
   { event: "render/requested" },
   async ({ event, step }) => {
-    const { renderId, tenantId } = event.data;
+    const { renderId, tenantId, photoId } = event.data;
 
-    const row = await step.run("load-render", async () => {
+    const { render, photo } = await step.run("load-render", async () => {
       const [r] = await db.select().from(renders).where(eq(renders.id, renderId));
       if (!r) throw new Error(`Render ${renderId} not found`);
-      return r;
+
+      const [p] = await db.select().from(photoUploads).where(eq(photoUploads.id, photoId));
+      if (!p) throw new Error(`Photo ${photoId} not found`);
+
+      return { render: r, photo: p };
     });
 
     await step.run("mark-processing", async () => {
@@ -31,13 +32,19 @@ export const processRender = inngest.createFunction(
         .where(eq(renders.id, renderId));
     });
 
+    const promptJson = render.promptJson as {
+      primaryChange?: string;
+      styleName?: string;
+      prompt?: string;
+    } | null;
+
     try {
       const result = await step.run("flux-pipeline", () =>
         runRenderPipeline({
           tenantId,
-          photoR2Key: row.outputR2Key ?? "", // TODO load photo r2 key from photoUploads
-          styleName: "Modern shaker",
-          primaryChange: "Replace existing cabinets with shaker style",
+          photoR2Key: photo.r2Key,
+          styleName: promptJson?.styleName ?? "Modern Shaker",
+          primaryChange: promptJson?.primaryChange ?? "redesign in a modern style",
         }),
       );
 
