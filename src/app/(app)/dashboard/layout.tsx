@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { requireTenant } from "@/lib/auth/tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +14,21 @@ const nav = [
   { href: "/dashboard/settings", label: "Settings" },
 ];
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Redirect to onboarding if tenant not yet provisioned
+  try {
+    await requireTenant();
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("not provisioned")) {
+      redirect("/onboarding");
+    }
+    // Other errors (not authed) handled by proxy.ts
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border">

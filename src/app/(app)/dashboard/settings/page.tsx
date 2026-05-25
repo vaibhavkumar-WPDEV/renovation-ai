@@ -1,19 +1,27 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireTenant } from "@/lib/auth/tenant";
 import { db } from "@/db/client";
-import { brandkits } from "@/db/schema";
+import { brandkits, subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { StripePortalButton } from "./StripePortalButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   let slug = "";
   let plan = "starter";
+  let hasStripeCustomer = false;
 
   try {
     const { tenant } = await requireTenant();
     slug = tenant.slug;
     plan = tenant.plan;
+    const [sub] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.tenantId, tenant.id))
+      .limit(1);
+    hasStripeCustomer = !!sub?.stripeCustomerId;
   } catch {
     // not authenticated
   }
@@ -96,12 +104,16 @@ export default async function SettingsPage() {
             <span>Monthly</span>
           </div>
           <div className="pt-2">
-            <a
-              href="#"
-              className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted"
-            >
-              Manage billing →
-            </a>
+            {hasStripeCustomer ? (
+              <StripePortalButton />
+            ) : (
+              <a
+                href="/pricing"
+                className="rounded-lg border border-border px-4 py-2 text-xs font-medium hover:bg-muted"
+              >
+                Upgrade plan →
+              </a>
+            )}
           </div>
         </CardContent>
       </Card>

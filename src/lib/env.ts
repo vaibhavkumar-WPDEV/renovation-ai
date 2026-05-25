@@ -12,6 +12,7 @@ const envSchema = z.object({
   // Auth
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
   CLERK_SECRET_KEY: z.string().optional(),
+  CLERK_WEBHOOK_SECRET: z.string().optional(),
 
   // AI
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -44,6 +45,9 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  STRIPE_PRICE_STARTER: z.string().optional(),
+  STRIPE_PRICE_GROWTH: z.string().optional(),
+  STRIPE_PRICE_PRO: z.string().optional(),
 
   // CRM
   GHL_OAUTH_CLIENT_ID: z.string().optional(),
