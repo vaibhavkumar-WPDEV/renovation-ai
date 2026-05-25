@@ -6,6 +6,7 @@ import { photoUploads, tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { presignUpload, photoKey } from "@/lib/storage/r2";
 import { env } from "@/lib/env";
+import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 
 const schema = z.object({
   tenantSlug: z.string(),
@@ -16,6 +17,12 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // 10 uploads per minute per IP
+  const rl = rateLimit(`upload:${ipFromRequest(req)}`, 10, 60_000);
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many uploads. Please slow down." }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

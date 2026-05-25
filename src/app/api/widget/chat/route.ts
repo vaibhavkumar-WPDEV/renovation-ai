@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { anthropic, MODELS } from "@/lib/ai/anthropic";
 import { buildConsultantSystemPrompt, buildRenderPrompt, NEGATIVE_PROMPT } from "@/lib/ai/prompts";
 import { consultantTools } from "@/lib/ai/tools";
+import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 import type Anthropic from "@anthropic-ai/sdk";
 
 export const maxDuration = 60;
@@ -149,6 +150,15 @@ async function handleToolCall(
 }
 
 export async function POST(req: Request) {
+  // 20 messages per minute per IP — protects Anthropic API costs
+  const rl = rateLimit(`chat:${ipFromRequest(req)}`, 20, 60_000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {

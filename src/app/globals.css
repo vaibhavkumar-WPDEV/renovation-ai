@@ -27,8 +27,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* System dark mode (no manual override) */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background: #0a0a0a;
     --foreground: #ededed;
     --muted: #1a1a1a;
@@ -37,6 +38,28 @@
     --primary-foreground: #0f172a;
     --border: #1e293b;
   }
+}
+
+/* Explicit dark override via data-theme="dark" */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --muted: #1a1a1a;
+  --muted-foreground: #94a3b8;
+  --primary: #f8fafc;
+  --primary-foreground: #0f172a;
+  --border: #1e293b;
+}
+
+/* Explicit light override via data-theme="light" */
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --primary: #0f172a;
+  --primary-foreground: #f8fafc;
+  --border: #e2e8f0;
 }
 
 body {

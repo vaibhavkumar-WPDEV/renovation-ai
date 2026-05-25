@@ -58,6 +58,9 @@ const envSchema = z.object({
   // Encryption
   ENCRYPTION_KEY: z.string().min(32).optional(),
 
+  // Super-admin (comma-separated Clerk user IDs)
+  ADMIN_CLERK_USER_IDS: z.string().optional(),
+
   // Feature flags
   ENABLE_VOICE_AGENTS: z
     .string()
