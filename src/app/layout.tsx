@@ -47,7 +47,6 @@ export default function RootLayout({
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
-        {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
         <head>
           <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         </head>

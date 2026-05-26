@@ -45,7 +45,6 @@ export default async function EmbedPage({ params }: Props) {
         <div className="mx-auto flex h-14 max-w-xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
             {row.brandkit?.logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={row.brandkit.logoUrl} alt={row.tenant.name} className="h-7" />
             )}
             <span className="text-sm font-semibold">{row.tenant.name}</span>

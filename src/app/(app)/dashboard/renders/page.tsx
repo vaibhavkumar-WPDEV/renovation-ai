@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/db/client";
-import { renders, leads } from "@/db/schema";
+import { renders } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireTenant } from "@/lib/auth/tenant";
 import { env } from "@/lib/env";
@@ -72,7 +72,6 @@ export default async function RendersPage() {
               <div key={r.id} className="overflow-hidden rounded-2xl border border-border">
                 <div className="relative bg-muted" style={{ aspectRatio: "4/3" }}>
                   {url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={url}
                       alt="AI render"

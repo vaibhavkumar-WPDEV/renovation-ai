@@ -39,8 +39,10 @@ export default async function DashboardLayout({
 
   const isTrialing = tenant?.status === "trialing";
   const trialEndsAt = tenant?.trialEndsAt ? new Date(tenant.trialEndsAt) : null;
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
   const trialDaysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
+    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - nowMs) / 86_400_000))
     : 0;
 
   return (

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import Stripe from "stripe";
 import { db } from "@/db/client";
-import { tenants, subscriptions } from "@/db/schema";
+import { subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireTenant } from "@/lib/auth/tenant";
 import { env } from "@/lib/env";

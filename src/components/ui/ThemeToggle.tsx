@@ -16,10 +16,12 @@ function applyTheme(theme: Theme) {
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("system");
 
+  // Read localStorage only on client (not SSR) — intentional setState in effect
   useEffect(() => {
     const saved = (localStorage.getItem("theme") as Theme) ?? "system";
-    setTheme(saved);
     applyTheme(saved);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTheme(saved);
   }, []);
 
   function cycle() {

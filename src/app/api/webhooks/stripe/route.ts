@@ -5,12 +5,6 @@ import { subscriptions, tenants, proposals } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 
-const PLAN_MAP: Record<string, "starter" | "growth" | "pro" | "agency" | "enterprise"> = {
-  price_starter: "starter",
-  price_growth: "growth",
-  price_pro: "pro",
-};
-
 function planFromMetadata(meta: Stripe.Metadata): "starter" | "growth" | "pro" | "agency" | "enterprise" {
   const p = meta?.plan as string | undefined;
   if (p === "starter" || p === "growth" || p === "pro" || p === "agency" || p === "enterprise") {

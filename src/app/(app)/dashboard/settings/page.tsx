@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireTenant } from "@/lib/auth/tenant";
 import { db } from "@/db/client";
-import { brandkits, subscriptions } from "@/db/schema";
+import { subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { StripePortalButton } from "./StripePortalButton";
 

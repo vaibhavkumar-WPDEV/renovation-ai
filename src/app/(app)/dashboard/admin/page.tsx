@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db/client";
 import { tenants, leads, renders, subscriptions } from "@/db/schema";
-import { count, desc, gte, sql } from "drizzle-orm";
+import { count, desc, sql } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -27,7 +27,9 @@ export default async function AdminPage() {
     redirect("/dashboard");
   }
 
-  const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
   const [
     allTenants,
@@ -205,9 +207,9 @@ export default async function AdminPage() {
                     <td className="px-4 py-2 text-muted-foreground">{timeAgo(t.createdAt)}</td>
                     <td className="px-4 py-2 text-muted-foreground">
                       {t.trialEndsAt
-                        ? t.trialEndsAt < new Date()
+                        ? t.trialEndsAt.getTime() < now
                           ? <span className="text-red-500">Expired</span>
-                          : timeAgo(new Date(Date.now() - (t.trialEndsAt.getTime() - Date.now())))
+                          : `${Math.ceil((t.trialEndsAt.getTime() - now) / 86_400_000)}d left`
                         : "—"}
                     </td>
                   </tr>

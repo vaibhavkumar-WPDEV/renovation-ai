@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,11 +47,13 @@ export default function OnboardingPage() {
   const [vertical, setVertical] = useState<VerticalId | null>(null);
   const [countryCode, setCountryCode] = useState("US");
 
-  useEffect(() => {
-    if (!slugEdited && businessName) {
-      setSlug(slugify(businessName));
+  // Derive slug from business name in the onChange handler (avoids setState-in-effect lint rule)
+  function handleBusinessNameChange(value: string) {
+    setBusinessName(value);
+    if (!slugEdited) {
+      setSlug(slugify(value));
     }
-  }, [businessName, slugEdited]);
+  }
 
   async function handleFinish() {
     if (!vertical) return;
@@ -126,7 +128,7 @@ export default function OnboardingPage() {
               <Input
                 placeholder="Haven Cabinetry"
                 value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
+                onChange={(e) => handleBusinessNameChange(e.target.value)}
                 autoFocus
               />
             </div>

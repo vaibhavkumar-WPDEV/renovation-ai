@@ -21,19 +21,9 @@ export class GoHighLevelAdapter implements CRMAdapter {
   constructor(private readonly accessToken: string) {}
 
   async pushContact(_tenant: Tenant, lead: Lead): Promise<ExternalId> {
-    // POST /contacts/
-    const _payload = {
-      email: lead.email,
-      phone: lead.phone,
-      firstName: lead.fullName?.split(" ")[0],
-      lastName: lead.fullName?.split(" ").slice(1).join(" "),
-      tags: ["renovateai", `score:${lead.score}`, lead.temperature ?? "cold"],
-      customFields: {
-        renovateai_lead_id: lead.id,
-        renovateai_source: lead.source,
-      },
-    };
-    // TODO Week 4: real fetch with this.accessToken
+    // TODO Week 4: POST /contacts/ with real fetch
+    // Payload shape: { email, phone, firstName, lastName, tags, customFields }
+    void lead;
     void this.accessToken;
     throw new CRMError("GHL pushContact not implemented yet", this.provider);
   }

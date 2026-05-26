@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db/client";
-import { leads, renders, proposals, tenants } from "@/db/schema";
+import { leads, renders, proposals } from "@/db/schema";
 import { eq, gte, count, and } from "drizzle-orm";
 import { requireTenant } from "@/lib/auth/tenant";
 

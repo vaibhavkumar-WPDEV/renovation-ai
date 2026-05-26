@@ -3,7 +3,6 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { brandkits } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
-import { eq } from "drizzle-orm";
 
 const schema = z.object({
   name: z.string().max(128).optional(),
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name: _name, license, bio, primaryColor, accentColor, voiceTone, logoUrl } =
+    const { license, bio, primaryColor, accentColor, voiceTone, logoUrl } =
       parsed.data;
 
     await db
