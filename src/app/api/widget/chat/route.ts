@@ -7,6 +7,7 @@ import { anthropic, MODELS } from "@/lib/ai/anthropic";
 import { buildConsultantSystemPrompt, buildRenderPrompt, NEGATIVE_PROMPT } from "@/lib/ai/prompts";
 import { consultantTools } from "@/lib/ai/tools";
 import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
+import { checkLimit, incrementUsage } from "@/lib/usage/meter";
 import type Anthropic from "@anthropic-ai/sdk";
 
 export const maxDuration = 60;
@@ -83,6 +84,17 @@ async function handleToolCall(
         };
       }
 
+      // Enforce the tenant's monthly render limit
+      const limit = await checkLimit(ctx.tenantId, "renders");
+      if (!limit.allowed) {
+        return {
+          type: "render_limit",
+          content:
+            "We've hit our design generation limit for this month. Leave your email and we'll send your design as soon as it's available!",
+          data: { showEmailForm: true },
+        };
+      }
+
       const prompt = buildRenderPrompt({
         vertical: "kitchen",
         styleName: (toolInput.styleId as string) ?? "Modern Shaker",
@@ -99,6 +111,8 @@ async function handleToolCall(
           promptJson: { prompt, negativePrompt: NEGATIVE_PROMPT },
         })
         .returning();
+
+      await incrementUsage(ctx.tenantId, "rendersUsed");
 
       // Fire-and-forget the Inngest event
       try {

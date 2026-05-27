@@ -4,9 +4,10 @@ import {
   processRender,
   runFollowup,
   scoreLead,
+  syncLeadToCrm,
 } from "@/inngest/functions";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [processRender, scoreLead, runFollowup],
+  functions: [processRender, scoreLead, runFollowup, syncLeadToCrm],
 });

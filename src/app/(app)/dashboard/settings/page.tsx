@@ -4,13 +4,38 @@ import { db } from "@/db/client";
 import { subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { StripePortalButton } from "./StripePortalButton";
+import { getUsage } from "@/lib/usage/meter";
+import { limitsForPlan, type PlanName } from "@/lib/constants/plans";
 
 export const dynamic = "force-dynamic";
+
+function UsageBar({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const unlimited = !Number.isFinite(limit);
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+  const near = pct >= 80;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={near ? "font-semibold text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>
+          {used} / {unlimited ? "∞" : limit}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full ${near ? "bg-amber-500" : "bg-accent"}`}
+          style={{ width: `${unlimited ? 4 : pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default async function SettingsPage() {
   let slug = "";
   let plan = "starter";
   let hasStripeCustomer = false;
+  let usage = { rendersUsed: 0, leadsReceived: 0, messagesSent: 0 };
 
   try {
     const { tenant } = await requireTenant();
@@ -22,9 +47,13 @@ export default async function SettingsPage() {
       .where(eq(subscriptions.tenantId, tenant.id))
       .limit(1);
     hasStripeCustomer = !!sub?.stripeCustomerId;
+    if (sub?.plan) plan = sub.plan;
+    usage = await getUsage(tenant.id);
   } catch {
     // not authenticated
   }
+
+  const limits = limitsForPlan(plan as PlanName);
 
   const origin = "https://your-domain.com"; // replaced at runtime by client
   const iframeSnippet = slug
@@ -103,6 +132,14 @@ export default async function SettingsPage() {
             <span className="text-muted-foreground">Billing</span>
             <span>Monthly</span>
           </div>
+
+          {/* This month's usage */}
+          <div className="space-y-3 border-t border-border pt-3">
+            <p className="text-xs font-medium text-muted-foreground">This month&apos;s usage</p>
+            <UsageBar label="AI renders" used={usage.rendersUsed} limit={limits.rendersPerMonth} />
+            <UsageBar label="Leads captured" used={usage.leadsReceived} limit={limits.leadsPerMonth} />
+          </div>
+
           <div className="pt-2">
             {hasStripeCustomer ? (
               <StripePortalButton />

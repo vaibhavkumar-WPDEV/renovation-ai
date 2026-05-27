@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { photoUploads, renders, tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { inngest } from "@/inngest/client";
+import { checkLimit, incrementUsage } from "@/lib/usage/meter";
 
 const createRenderSchema = z.object({
   tenantSlug: z.string(),
@@ -41,6 +42,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Photo not found" }, { status: 404 });
   }
 
+  // Enforce monthly render limit for the tenant's plan
+  const limit = await checkLimit(tenant.id, "renders");
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        error: "render_limit_reached",
+        message: `Monthly render limit reached (${limit.used}/${limit.limit} on ${limit.plan}). Upgrade your plan for more.`,
+        used: limit.used,
+        limit: limit.limit,
+        plan: limit.plan,
+      },
+      { status: 429 },
+    );
+  }
+
   const [render] = await db
     .insert(renders)
     .values({
@@ -52,6 +68,8 @@ export async function POST(req: Request) {
       status: "queued",
     })
     .returning();
+
+  await incrementUsage(tenant.id, "rendersUsed");
 
   await inngest.send({
     name: "render/requested",
@@ -66,7 +84,7 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(
-    { id: render.id, status: "queued" },
+    { id: render.id, status: "queued", remaining: limit.remaining - 1 },
     { status: 202 },
   );
 }

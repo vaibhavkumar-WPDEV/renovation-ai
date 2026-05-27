@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { leads, tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { inngest } from "@/inngest/client";
+import { checkLimit, incrementUsage } from "@/lib/usage/meter";
 
 const createLeadSchema = z.object({
   tenantSlug: z.string(),
@@ -34,6 +35,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
+  // Enforce monthly lead-capture limit. We still 201 the lead so we never lose
+  // a real prospect, but flag that the tenant is over their plan limit.
+  const limit = await checkLimit(tenant.id, "leads");
+
   const [lead] = await db
     .insert(leads)
     .values({
@@ -47,10 +52,15 @@ export async function POST(req: Request) {
     })
     .returning();
 
+  await incrementUsage(tenant.id, "leadsReceived");
+
   await inngest.send({
     name: "lead/created",
     data: { tenantId: tenant.id, leadId: lead.id, source: lead.source ?? undefined },
   });
 
-  return NextResponse.json({ id: lead.id, status: "created" }, { status: 201 });
+  return NextResponse.json(
+    { id: lead.id, status: "created", overLimit: !limit.allowed },
+    { status: 201 },
+  );
 }

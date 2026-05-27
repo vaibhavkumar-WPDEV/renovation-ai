@@ -11,7 +11,11 @@ export async function getAdapter(integration: Integration): Promise<CRMAdapter> 
   const creds = await decryptCredentials(integration.credentialsEncrypted);
   switch (integration.provider) {
     case "gohighlevel":
-      return new GoHighLevelAdapter(creds.accessToken);
+      return new GoHighLevelAdapter(creds.accessToken, {
+        locationId: creds.locationId as string | undefined,
+        pipelineId: creds.pipelineId as string | undefined,
+        pipelineStageId: creds.pipelineStageId as string | undefined,
+      });
     case "hubspot":
       throw new Error("HubSpot adapter not yet implemented (Week 13)");
     case "jobber":
