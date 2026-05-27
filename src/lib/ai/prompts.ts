@@ -7,6 +7,7 @@ import type { Brandkit, Tenant } from "@/db/schema";
 export function buildConsultantSystemPrompt(
   tenant: Tenant,
   brandkit: Brandkit | null,
+  knowledgeBlock = "",
 ): string {
   const tone = brandkit?.voice?.tone ?? "warm, professional, expert";
   const bio = brandkit?.contractorBio ?? "";
@@ -43,7 +44,7 @@ You have access to these tools:
 - request_email(): prompt for email to save the design
 - book_consultation(): offer calendar slots
 - handoff_to_human(): escalate to the contractor's team
-`;
+${knowledgeBlock}`;
 }
 
 export interface RenderPromptInput {

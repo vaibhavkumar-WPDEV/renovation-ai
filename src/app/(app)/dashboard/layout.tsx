@@ -13,6 +13,7 @@ const nav = [
   { href: "/dashboard/leads", label: "Leads" },
   { href: "/dashboard/renders", label: "Renders" },
   { href: "/dashboard/brandkit", label: "BrandKit" },
+  { href: "/dashboard/knowledge", label: "AI Knowledge" },
   { href: "/dashboard/integrations", label: "Integrations" },
   { href: "/dashboard/settings", label: "Settings" },
 ];

@@ -8,6 +8,7 @@ import { buildConsultantSystemPrompt, buildRenderPrompt, NEGATIVE_PROMPT } from 
 import { consultantTools } from "@/lib/ai/tools";
 import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 import { checkLimit, incrementUsage } from "@/lib/usage/meter";
+import { retrieveKnowledge, formatKnowledgeForPrompt } from "@/lib/ai/knowledge";
 import type Anthropic from "@anthropic-ai/sdk";
 
 export const maxDuration = 60;
@@ -196,7 +197,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
-  const systemPrompt = buildConsultantSystemPrompt(row.tenant, row.brandkit);
+  // Retrieve relevant business knowledge (RAG) based on the latest user turn
+  let knowledgeBlock = "";
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+  if (lastUserMessage) {
+    try {
+      const chunks = await retrieveKnowledge(row.tenant.id, lastUserMessage.content);
+      knowledgeBlock = formatKnowledgeForPrompt(chunks);
+    } catch (err) {
+      console.error("[chat] knowledge retrieval failed", err);
+    }
+  }
+
+  const systemPrompt = buildConsultantSystemPrompt(row.tenant, row.brandkit, knowledgeBlock);
 
   // Convert incoming messages to Anthropic format
   const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
