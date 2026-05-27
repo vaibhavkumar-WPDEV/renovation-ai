@@ -211,8 +211,16 @@ export async function POST(req: Request) {
 
   const systemPrompt = buildConsultantSystemPrompt(row.tenant, row.brandkit, knowledgeBlock);
 
-  // Convert incoming messages to Anthropic format
-  const anthropicMessages: Anthropic.MessageParam[] = messages.map((m) => ({
+  // Sliding window: keep only the most recent turns so long chats stay fast and
+  // cheap. The system prompt + RAG carry the durable context. Must start on a
+  // user turn (Anthropic requirement).
+  const WINDOW = 16;
+  let windowed = messages.slice(-WINDOW);
+  while (windowed.length && windowed[0].role !== "user") {
+    windowed = windowed.slice(1);
+  }
+
+  const anthropicMessages: Anthropic.MessageParam[] = windowed.map((m) => ({
     role: m.role,
     content: m.content,
   }));

@@ -4,6 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { requireTenant } from "@/lib/auth/tenant";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { getUsage } from "@/lib/usage/meter";
+import { limitsForPlan, type PlanName } from "@/lib/constants/plans";
 import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +49,19 @@ export default async function DashboardLayout({
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - nowMs) / 86_400_000))
     : 0;
 
+  // Render-usage warning (≥80% of monthly limit)
+  let renderUsagePct = 0;
+  let renderLimitReached = false;
+  if (tenant) {
+    const usage = await getUsage(tenant.id);
+    const limit = limitsForPlan(tenant.plan as PlanName).rendersPerMonth;
+    if (Number.isFinite(limit) && limit > 0) {
+      renderUsagePct = Math.round((usage.rendersUsed / limit) * 100);
+      renderLimitReached = usage.rendersUsed >= limit;
+    }
+  }
+  const showUsageWarning = renderUsagePct >= 80;
+
   return (
     <div className="flex flex-1 flex-col">
       {/* Trial expiry banner — shows in last 7 days */}
@@ -57,6 +72,18 @@ export default async function DashboardLayout({
             : `Your free trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}. `}
           <Link href="/pricing" className="font-semibold underline underline-offset-2 hover:no-underline">
             Upgrade now →
+          </Link>
+        </div>
+      )}
+
+      {/* Render usage warning — at 80%+ of monthly limit */}
+      {showUsageWarning && (
+        <div className="border-b border-orange-200 bg-orange-50 px-6 py-2 text-center text-xs text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-400">
+          {renderLimitReached
+            ? "You've reached your monthly render limit. "
+            : `You've used ${renderUsagePct}% of your monthly renders. `}
+          <Link href="/pricing" className="font-semibold underline underline-offset-2 hover:no-underline">
+            Upgrade for more →
           </Link>
         </div>
       )}
