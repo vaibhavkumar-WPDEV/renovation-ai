@@ -67,3 +67,36 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Generated SEO landing-page content */
+.seo-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.seo-content h2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+}
+.seo-content h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.seo-content p {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+}
+.seo-content .intro {
+  font-size: 1.125rem;
+  color: var(--foreground);
+}
+.seo-content .faq {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+.seo-content .cta {
+  margin-top: 2rem;
+}
