@@ -742,3 +742,5 @@ export type Render = typeof renders.$inferSelect;
 export type Style = typeof styles.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Integration = typeof integrations.$inferSelect;
+export type Vertical = (typeof vertical.enumValues)[number];
+export type PlanTier = (typeof planTier.enumValues)[number];

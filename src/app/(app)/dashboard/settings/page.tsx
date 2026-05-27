@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireTenant } from "@/lib/auth/tenant";
 import { db } from "@/db/client";
-import { subscriptions } from "@/db/schema";
+import { subscriptions, tenantSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { StripePortalButton } from "./StripePortalButton";
+import { PricingRulesForm } from "./PricingRulesForm";
 import { getUsage } from "@/lib/usage/meter";
 import { limitsForPlan, type PlanName } from "@/lib/constants/plans";
 
@@ -36,6 +37,12 @@ export default async function SettingsPage() {
   let plan = "starter";
   let hasStripeCustomer = false;
   let usage = { rendersUsed: 0, leadsReceived: 0, messagesSent: 0 };
+  let pricingRules: {
+    cabinetPerLinearFt?: number;
+    countertopPerSqFt?: number;
+    laborMultiplier?: number;
+    minProjectValue?: number;
+  } | null = null;
 
   try {
     const { tenant } = await requireTenant();
@@ -49,6 +56,12 @@ export default async function SettingsPage() {
     hasStripeCustomer = !!sub?.stripeCustomerId;
     if (sub?.plan) plan = sub.plan;
     usage = await getUsage(tenant.id);
+    const [settings] = await db
+      .select()
+      .from(tenantSettings)
+      .where(eq(tenantSettings.tenantId, tenant.id))
+      .limit(1);
+    pricingRules = settings?.pricingRules ?? null;
   } catch {
     // not authenticated
   }
@@ -152,6 +165,19 @@ export default async function SettingsPage() {
               </a>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing rules — powers the AI Budget Estimator */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pricing rules</CardTitle>
+          <CardDescription>
+            Your rates power the AI Budget Estimator. Leave blank to use 2026 regional defaults.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PricingRulesForm initial={pricingRules} />
         </CardContent>
       </Card>
 

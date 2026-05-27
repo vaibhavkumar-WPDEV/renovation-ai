@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/db/client";
 import { leads } from "@/db/schema";
@@ -69,7 +70,9 @@ export default async function LeadsPage() {
               {rows.map((lead) => (
                 <tr key={lead.id} className="hover:bg-muted/20">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{lead.fullName ?? "Unknown"}</p>
+                    <Link href={`/dashboard/leads/${lead.id}`} className="font-medium hover:text-accent hover:underline">
+                      {lead.fullName ?? "Unknown"}
+                    </Link>
                     <p className="text-xs text-muted-foreground">
                       {lead.email ?? lead.phone ?? "—"}
                     </p>
