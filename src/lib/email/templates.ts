@@ -3,6 +3,16 @@
  * No React Email dependency — keeps the bundle small and edge-compatible.
  */
 
+/** Escape user-controlled text before interpolating into HTML emails. */
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface FollowUpEmail {
   tenantName: string;
   leadName: string;
@@ -18,7 +28,7 @@ export function followUp1Html({
   renderUrl,
   widgetUrl,
 }: FollowUpEmail): string {
-  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  const greeting = leadName ? `Hi ${escapeHtml(leadName.split(" ")[0])},` : "Hi there,";
   const renderSection = renderUrl
     ? `<p style="margin:16px 0">Your AI design is ready to view:</p>
        <p style="margin:16px 0"><a href="${renderUrl}" style="background:${accentColor};color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View your design →</a></p>`
@@ -54,7 +64,7 @@ export function followUp2Html({
   accentColor,
   widgetUrl,
 }: FollowUpEmail): string {
-  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  const greeting = leadName ? `Hi ${escapeHtml(leadName.split(" ")[0])},` : "Hi there,";
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -105,7 +115,7 @@ export function proposalHtml({
   proposalUrl: string;
   expiresAt: Date | null;
 }): string {
-  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  const greeting = leadName ? `Hi ${escapeHtml(leadName.split(" ")[0])},` : "Hi there,";
   const expiry = expiresAt
     ? `<p style="margin:24px 0 8px;font-size:14px;color:#64748b">This proposal is valid until ${expiresAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.</p>`
     : "";
@@ -148,7 +158,7 @@ export function proposalSignedHtml({
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
     <p style="font-size:22px;font-weight:700;margin:0 0 16px">Proposal signed ✓</p>
-    <p style="margin:0 0 16px">${signerName} just accepted the proposal${leadName ? ` for ${leadName}'s project` : ""}. They've been prompted to pay the deposit to secure their slot.</p>
+    <p style="margin:0 0 16px">${escapeHtml(signerName)} just accepted the proposal${leadName ? ` for ${escapeHtml(leadName)}'s project` : ""}. They've been prompted to pay the deposit to secure their slot.</p>
     <p style="margin:16px 0"><a href="${dashboardUrl}" style="background:#F59E0B;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Open the lead →</a></p>
     <p style="margin:24px 0 0;font-size:14px;color:#94a3b8">— RenovateAI</p>
   </div>
@@ -171,7 +181,7 @@ export function reviewRequestHtml({
   accentColor: string;
   reviewUrl: string;
 }): string {
-  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  const greeting = leadName ? `Hi ${escapeHtml(leadName.split(" ")[0])},` : "Hi there,";
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -209,11 +219,11 @@ export function lowRatingAlertHtml({
 }): string {
   const feedbackBlock = feedback
     ? `<p style="margin:0 0 8px;font-size:13px;color:#64748b">What they said:</p>
-       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:0 8px 8px 0;font-size:14px">${feedback}</blockquote>`
+       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:0 8px 8px 0;font-size:14px">${escapeHtml(feedback)}</blockquote>`
     : "";
   const draftBlock = aiDraft
     ? `<p style="margin:16px 0 8px;font-size:13px;color:#64748b">Suggested reply (review &amp; personalize before sending):</p>
-       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 8px 8px 0;font-size:14px">${aiDraft}</blockquote>`
+       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 8px 8px 0;font-size:14px">${escapeHtml(aiDraft)}</blockquote>`
     : "";
   return `<!DOCTYPE html>
 <html>
@@ -221,7 +231,7 @@ export function lowRatingAlertHtml({
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
     <p style="font-size:22px;font-weight:700;margin:0 0 16px">${rating}-star private feedback</p>
-    <p style="margin:0 0 16px">${leadName ?? "A customer"} rated their experience ${rating}/5. This was caught privately — it has NOT been posted publicly. Reaching out within 24 hours dramatically improves recovery.</p>
+    <p style="margin:0 0 16px">${leadName ? escapeHtml(leadName) : "A customer"} rated their experience ${rating}/5. This was caught privately — it has NOT been posted publicly. Reaching out within 24 hours dramatically improves recovery.</p>
     ${feedbackBlock}
     ${draftBlock}
     <p style="margin:16px 0"><a href="${dashboardUrl}" style="background:#F59E0B;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Open reviews dashboard →</a></p>
@@ -246,7 +256,7 @@ export function trialReminderHtml({
   daysLeft: number;
   upgradeUrl: string;
 }): string {
-  const greeting = contractorName ? `Hi ${contractorName.split(" ")[0]},` : "Hi,";
+  const greeting = contractorName ? `Hi ${escapeHtml(contractorName.split(" ")[0])},` : "Hi,";
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

@@ -5,16 +5,17 @@ import { brandkits, leads, messages, proposals } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
 import { sendEmail } from "@/lib/email/send";
 import { proposalHtml, proposalSubject } from "@/lib/email/templates";
+import { audit } from "@/lib/security/audit";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
 
-  let tenant;
+  let tenant, user;
   try {
-    ({ tenant } = await requireTenant());
+    ({ tenant, user } = await requireTenant());
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -82,6 +83,16 @@ export async function POST(
     .update(leads)
     .set({ stage: "proposal_sent", updatedAt: new Date() })
     .where(eq(leads.id, lead.id));
+
+  await audit({
+    tenantId: tenant.id,
+    actorId: user.id,
+    action: "proposal.sent",
+    entity: "proposal",
+    entityId: proposal.id,
+    after: { sentTo: lead.email, status: proposal.status === "draft" ? "sent" : proposal.status },
+    req,
+  });
 
   return NextResponse.json({ ok: true, sentTo: lead.email });
 }

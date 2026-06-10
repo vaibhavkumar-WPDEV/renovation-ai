@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { subscriptions, tenants, proposals, leads } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
+import { audit } from "@/lib/security/audit";
 
 function planFromMetadata(meta: Stripe.Metadata): "starter" | "growth" | "pro" | "agency" | "enterprise" {
   const p = meta?.plan as string | undefined;
@@ -82,6 +83,14 @@ export async function POST(req: Request) {
         .set({ plan, status: "active", updatedAt: new Date() })
         .where(eq(tenants.id, tenantId));
 
+      await audit({
+        tenantId,
+        action: "subscription.created",
+        entity: "subscription",
+        entityId: subscriptionId,
+        after: { plan, status: sub.status },
+      });
+
       break;
     }
 
@@ -120,6 +129,15 @@ export async function POST(req: Request) {
           .set({ status: "canceled", updatedAt: new Date() })
           .where(eq(tenants.id, tenantId));
       }
+
+      await audit({
+        tenantId,
+        action: "subscription.updated",
+        entity: "subscription",
+        entityId: sub.id,
+        after: { plan, status: sub.status },
+      });
+
       break;
     }
 
@@ -137,6 +155,13 @@ export async function POST(req: Request) {
         .update(tenants)
         .set({ status: "canceled", updatedAt: new Date() })
         .where(eq(tenants.id, tenantId));
+
+      await audit({
+        tenantId,
+        action: "subscription.deleted",
+        entity: "subscription",
+        entityId: sub.id,
+      });
       break;
     }
 
@@ -163,6 +188,13 @@ export async function POST(req: Request) {
           .set({ stage: "won", updatedAt: new Date() })
           .where(eq(leads.id, updated.leadId));
       }
+
+      await audit({
+        action: "proposal.deposit_paid",
+        entity: "proposal",
+        entityId: proposalId,
+        after: { amountCents: pi.amount_received, paymentIntentId: pi.id },
+      });
       break;
     }
 

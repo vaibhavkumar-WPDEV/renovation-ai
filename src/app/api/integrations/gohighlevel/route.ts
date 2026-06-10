@@ -3,12 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { integrations } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
+import { audit } from "@/lib/security/audit";
 
 /** Disconnect the tenant's GoHighLevel integration. */
-export async function DELETE() {
-  let tenant;
+export async function DELETE(req: Request) {
+  let tenant, user;
   try {
-    ({ tenant } = await requireTenant());
+    ({ tenant, user } = await requireTenant());
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,6 +22,15 @@ export async function DELETE() {
         eq(integrations.provider, "gohighlevel"),
       ),
     );
+
+  await audit({
+    tenantId: tenant.id,
+    actorId: user.id,
+    action: "integration.disconnected",
+    entity: "integration",
+    entityId: "gohighlevel",
+    req,
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -3,6 +3,7 @@ import { db } from "@/db/client";
 import { integrations } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
 import { encryptCredentials } from "@/lib/security/crypto";
+import { audit } from "@/lib/security/audit";
 import { env } from "@/lib/env";
 
 const TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
@@ -22,9 +23,9 @@ interface GHLTokenResponse {
 export async function GET(req: Request) {
   const dashboardUrl = new URL("/dashboard/integrations", env.NEXT_PUBLIC_APP_URL);
 
-  let tenant;
+  let tenant, user;
   try {
-    ({ tenant } = await requireTenant());
+    ({ tenant, user } = await requireTenant());
   } catch {
     return NextResponse.redirect(new URL("/sign-in", env.NEXT_PUBLIC_APP_URL));
   }
@@ -84,6 +85,16 @@ export async function GET(req: Request) {
         target: [integrations.tenantId, integrations.provider],
         set: { credentialsEncrypted: encrypted, status: "active" },
       });
+
+    await audit({
+      tenantId: tenant.id,
+      actorId: user.id,
+      action: "integration.connected",
+      entity: "integration",
+      entityId: "gohighlevel",
+      after: { provider: "gohighlevel", locationId: tokens.locationId ?? null },
+      req,
+    });
 
     dashboardUrl.searchParams.set("ghl", "connected");
     return NextResponse.redirect(dashboardUrl);

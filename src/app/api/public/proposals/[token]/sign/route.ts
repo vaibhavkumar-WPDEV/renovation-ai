@@ -7,6 +7,7 @@ import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 import { sendEmail } from "@/lib/email/send";
 import { proposalSignedHtml, proposalSignedSubject } from "@/lib/email/templates";
 import { env } from "@/lib/env";
+import { audit } from "@/lib/security/audit";
 
 const schema = z.object({
   name: z.string().min(2).max(128),
@@ -64,6 +65,16 @@ export async function POST(
       .set({ stage: "proposal_sent", temperature: "hot", updatedAt: new Date() })
       .where(eq(leads.id, proposal.leadId));
   }
+
+  await audit({
+    tenantId: proposal.tenantId,
+    action: "proposal.signed",
+    entity: "proposal",
+    entityId: proposal.id,
+    before: { status: proposal.status, signedAt: proposal.signedAt },
+    after: { status: "signed", signerName: parsed.data.name.trim() },
+    req,
+  });
 
   // Notify the contractor owner — best-effort, never blocks the signer
   try {

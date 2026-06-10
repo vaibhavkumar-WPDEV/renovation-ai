@@ -5,6 +5,7 @@ import { photoUploads, renders, tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { inngest } from "@/inngest/client";
 import { checkLimit, incrementUsage } from "@/lib/usage/meter";
+import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 
 const createRenderSchema = z.object({
   tenantSlug: z.string(),
@@ -15,6 +16,12 @@ const createRenderSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // 10 render requests per minute per IP — each render costs real money
+  const rl = rateLimit(`v1-renders:${ipFromRequest(req)}`, 10, 60_000);
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = createRenderSchema.safeParse(body);
   if (!parsed.success) {

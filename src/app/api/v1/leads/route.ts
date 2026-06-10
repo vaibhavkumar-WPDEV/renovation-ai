@@ -5,6 +5,7 @@ import { leads, tenants } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { inngest } from "@/inngest/client";
 import { checkLimit, incrementUsage } from "@/lib/usage/meter";
+import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
 
 const createLeadSchema = z.object({
   tenantSlug: z.string(),
@@ -17,6 +18,12 @@ const createLeadSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // 30 lead submissions per minute per IP — protects tenant inboxes from spam
+  const rl = rateLimit(`v1-leads:${ipFromRequest(req)}`, 30, 60_000);
+  if (!rl.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = createLeadSchema.safeParse(body);
   if (!parsed.success) {

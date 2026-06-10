@@ -8,6 +8,7 @@ import { draftFeedbackResponse } from "@/lib/ai/review";
 import { sendEmail } from "@/lib/email/send";
 import { lowRatingAlertHtml, lowRatingAlertSubject } from "@/lib/email/templates";
 import { env } from "@/lib/env";
+import { audit } from "@/lib/security/audit";
 
 // 4-5 stars → invite a public review; below → capture privately
 const PUBLIC_THRESHOLD = 4;
@@ -64,6 +65,16 @@ export async function POST(
       responseStatus: lockedPublic ? "rated_public" : "rated_private",
     })
     .where(eq(reviewRequests.id, request.id));
+
+  await audit({
+    tenantId: request.tenantId,
+    action: "review.submitted",
+    entity: "review_request",
+    entityId: request.id,
+    before: { rating: request.rating, responseStatus: request.responseStatus },
+    after: { rating: lockedRating, feedback: feedback ?? null, responseStatus: lockedPublic ? "rated_public" : "rated_private" },
+    req,
+  });
 
   // Public path: hand back the contractor's review links
   if (lockedPublic) {

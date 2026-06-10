@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { tenantSettings } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
+import { audit } from "@/lib/security/audit";
 
 const schema = z.object({
   googleReviewUrl: z.string().url().max(500).or(z.literal("")).optional(),
@@ -12,9 +14,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  let tenant;
+  let tenant, user;
   try {
-    ({ tenant } = await requireTenant());
+    ({ tenant, user } = await requireTenant());
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -35,6 +37,12 @@ export async function POST(req: Request) {
     autoSendAfterDays: parsed.data.autoSendAfterDays ?? 14,
   };
 
+  const [existing] = await db
+    .select({ reviewConfig: tenantSettings.reviewConfig })
+    .from(tenantSettings)
+    .where(eq(tenantSettings.tenantId, tenant.id))
+    .limit(1);
+
   await db
     .insert(tenantSettings)
     .values({ tenantId: tenant.id, reviewConfig, updatedAt: new Date() })
@@ -42,6 +50,17 @@ export async function POST(req: Request) {
       target: tenantSettings.tenantId,
       set: { reviewConfig, updatedAt: new Date() },
     });
+
+  await audit({
+    tenantId: tenant.id,
+    actorId: user.id,
+    action: "settings.reviews.updated",
+    entity: "tenant_settings",
+    entityId: tenant.id,
+    before: existing?.reviewConfig ?? null,
+    after: reviewConfig,
+    req,
+  });
 
   return NextResponse.json({ ok: true });
 }
