@@ -350,17 +350,31 @@ export const proposals = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
+    leadId: uuid("lead_id").references(() => leads.id, {
+      onDelete: "set null",
+    }),
     scopeId: uuid("scope_id")
       .notNull()
       .references(() => projectScopes.id, { onDelete: "cascade" }),
     estimateId: uuid("estimate_id").references(() => estimates.id, {
       onDelete: "set null",
     }),
+    // Unguessable token for the public homeowner-facing proposal URL (/p/[token])
+    accessToken: varchar("access_token", { length: 64 }).notNull().unique(),
+    title: text("title"),
+    content: jsonb("content").$type<{
+      intro: string;
+      scopeSummary: string;
+      whyUs: string;
+      processSteps: Array<{ title: string; description: string }>;
+      terms: string;
+    }>(),
     pdfUrl: text("pdf_url"),
     webUrl: text("web_url"),
     status: proposalStatus("status").notNull().default("draft"),
     viewedAt: timestamp("viewed_at", { withTimezone: true }),
     signedAt: timestamp("signed_at", { withTimezone: true }),
+    signerName: varchar("signer_name", { length: 128 }),
     depositPaidAt: timestamp("deposit_paid_at", { withTimezone: true }),
     depositCents: integer("deposit_cents"),
     stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 128 }),
@@ -369,7 +383,10 @@ export const proposals = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("proposals_status_idx").on(t.status)],
+  (t) => [
+    index("proposals_status_idx").on(t.status),
+    index("proposals_lead_idx").on(t.leadId),
+  ],
 );
 
 // =============================================================================

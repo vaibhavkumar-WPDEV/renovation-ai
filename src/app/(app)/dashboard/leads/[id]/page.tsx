@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { chatSessions, estimates, leads, projectScopes } from "@/db/schema";
+import { chatSessions, estimates, leads, projectScopes, proposals } from "@/db/schema";
 import { requireTenant } from "@/lib/auth/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScopeEstimatePanel } from "./ScopeEstimatePanel";
+import { ProposalPanel } from "./ProposalPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,14 @@ export default async function LeadDetailPage({
       .limit(1);
   }
 
+  // Latest proposal for this lead
+  const [proposal] = await db
+    .select()
+    .from(proposals)
+    .where(and(eq(proposals.leadId, id), eq(proposals.tenantId, tenant.id)))
+    .orderBy(desc(proposals.createdAt))
+    .limit(1);
+
   return (
     <div className="space-y-6">
       <Link href="/dashboard/leads" className="text-sm text-muted-foreground hover:text-foreground">
@@ -106,6 +115,30 @@ export default async function LeadDetailPage({
             transcript={transcript}
             initialScope={scope ?? null}
             initialEstimate={estimate}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Proposal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProposalPanel
+            scopeId={scope?.id ?? null}
+            hasEstimate={!!estimate}
+            initialProposal={
+              proposal
+                ? {
+                    id: proposal.id,
+                    status: proposal.status,
+                    webUrl: proposal.webUrl,
+                    depositCents: proposal.depositCents,
+                    signerName: proposal.signerName,
+                    expiresAt: proposal.expiresAt?.toISOString() ?? null,
+                  }
+                : null
+            }
           />
         </CardContent>
       </Card>

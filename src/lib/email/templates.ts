@@ -88,6 +88,74 @@ export function followUp2Subject(tenantName: string): string {
   return `Limited consult spots available — ${tenantName}`;
 }
 
+export function proposalSubject(tenantName: string): string {
+  return `Your project proposal is ready — ${tenantName}`;
+}
+
+export function proposalHtml({
+  tenantName,
+  leadName,
+  accentColor,
+  proposalUrl,
+  expiresAt,
+}: {
+  tenantName: string;
+  leadName: string | null;
+  accentColor: string;
+  proposalUrl: string;
+  expiresAt: Date | null;
+}): string {
+  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  const expiry = expiresAt
+    ? `<p style="margin:24px 0 8px;font-size:14px;color:#64748b">This proposal is valid until ${expiresAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.</p>`
+    : "";
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
+    <p style="font-size:22px;font-weight:700;margin:0 0 4px">${tenantName}</p>
+    <p style="color:#64748b;font-size:13px;margin:0 0 24px">Project Proposal</p>
+
+    <p style="margin:0 0 16px">${greeting}</p>
+    <p style="margin:0 0 16px">Your personalized project proposal is ready — including your design concepts, detailed scope, and investment range.</p>
+
+    <p style="margin:16px 0"><a href="${proposalUrl}" style="background:${accentColor};color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">View your proposal →</a></p>
+
+    ${expiry}
+    <p style="margin:0;font-size:14px;color:#94a3b8">— The ${tenantName} team</p>
+  </div>
+</body>
+</html>`;
+}
+
+export function proposalSignedSubject(leadName: string | null): string {
+  return `🎉 Proposal signed${leadName ? ` by ${leadName}` : ""}`;
+}
+
+export function proposalSignedHtml({
+  leadName,
+  signerName,
+  dashboardUrl,
+}: {
+  leadName: string | null;
+  signerName: string;
+  dashboardUrl: string;
+}): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
+    <p style="font-size:22px;font-weight:700;margin:0 0 16px">Proposal signed ✓</p>
+    <p style="margin:0 0 16px">${signerName} just accepted the proposal${leadName ? ` for ${leadName}'s project` : ""}. They've been prompted to pay the deposit to secure their slot.</p>
+    <p style="margin:16px 0"><a href="${dashboardUrl}" style="background:#F59E0B;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Open the lead →</a></p>
+    <p style="margin:24px 0 0;font-size:14px;color:#94a3b8">— RenovateAI</p>
+  </div>
+</body>
+</html>`;
+}
+
 export function trialReminderSubject(daysLeft: number): string {
   return daysLeft <= 1
     ? "Your RenovateAI trial ends tomorrow"

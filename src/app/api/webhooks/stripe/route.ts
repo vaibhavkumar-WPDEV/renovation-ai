@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/db/client";
-import { subscriptions, tenants, proposals } from "@/db/schema";
+import { subscriptions, tenants, proposals, leads } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
       const proposalId = pi.metadata?.proposalId;
       if (!proposalId) break;
 
-      await db
+      const [updated] = await db
         .update(proposals)
         .set({
           status: "deposit_paid",
@@ -153,7 +153,16 @@ export async function POST(req: Request) {
           depositCents: pi.amount_received,
           stripePaymentIntentId: pi.id,
         })
-        .where(eq(proposals.id, proposalId));
+        .where(eq(proposals.id, proposalId))
+        .returning({ leadId: proposals.leadId });
+
+      // Deposit in hand → the lead is won
+      if (updated?.leadId) {
+        await db
+          .update(leads)
+          .set({ stage: "won", updatedAt: new Date() })
+          .where(eq(leads.id, updated.leadId));
+      }
       break;
     }
 
