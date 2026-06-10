@@ -17,6 +17,7 @@ const nav = [
   { href: "/dashboard/brandkit", label: "BrandKit" },
   { href: "/dashboard/knowledge", label: "AI Knowledge" },
   { href: "/dashboard/seo", label: "SEO Pages" },
+  { href: "/dashboard/reviews", label: "Reviews" },
   { href: "/dashboard/integrations", label: "Integrations" },
   { href: "/dashboard/settings", label: "Settings" },
 ];

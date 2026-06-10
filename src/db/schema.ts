@@ -205,6 +205,12 @@ export const tenantSettings = pgTable("tenant_settings", {
     cadenceHours: number[];
     pauseOnReply: boolean;
   }>(),
+  reviewConfig: jsonb("review_config").$type<{
+    googleReviewUrl?: string;
+    yelpReviewUrl?: string;
+    autoSend?: boolean;
+    autoSendAfterDays?: number;
+  }>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -672,22 +678,32 @@ export const seoPages = pgTable(
   (t) => [unique().on(t.tenantId, t.slug)],
 );
 
-export const reviewRequests = pgTable("review_requests", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  tenantId: uuid("tenant_id")
-    .notNull()
-    .references(() => tenants.id, { onDelete: "cascade" }),
-  leadId: uuid("lead_id")
-    .notNull()
-    .references(() => leads.id, { onDelete: "cascade" }),
-  sentAt: timestamp("sent_at", { withTimezone: true }),
-  platform: varchar("platform", { length: 32 }),
-  rating: integer("rating"),
-  responseStatus: varchar("response_status", { length: 32 }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const reviewRequests = pgTable(
+  "review_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id, { onDelete: "cascade" }),
+    // Unguessable token for the public review funnel URL (/r/[token])
+    accessToken: varchar("access_token", { length: 64 }).notNull().unique(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    platform: varchar("platform", { length: 32 }),
+    rating: integer("rating"),
+    // Private feedback captured when the rating is below the public threshold
+    feedback: text("feedback"),
+    aiResponseDraft: text("ai_response_draft"),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    responseStatus: varchar("response_status", { length: 32 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("review_requests_tenant_idx").on(t.tenantId)],
+);
 
 export const subscriptions = pgTable("subscriptions", {
   tenantId: uuid("tenant_id")

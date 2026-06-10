@@ -156,6 +156,81 @@ export function proposalSignedHtml({
 </html>`;
 }
 
+export function reviewRequestSubject(tenantName: string): string {
+  return `How did we do? — ${tenantName}`;
+}
+
+export function reviewRequestHtml({
+  tenantName,
+  leadName,
+  accentColor,
+  reviewUrl,
+}: {
+  tenantName: string;
+  leadName: string | null;
+  accentColor: string;
+  reviewUrl: string;
+}): string {
+  const greeting = leadName ? `Hi ${leadName.split(" ")[0]},` : "Hi there,";
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
+    <p style="font-size:22px;font-weight:700;margin:0 0 24px">${tenantName}</p>
+
+    <p style="margin:0 0 16px">${greeting}</p>
+    <p style="margin:0 0 16px">Thank you for trusting us with your project! It would mean the world to us if you could share how your experience went — it takes less than a minute.</p>
+
+    <p style="margin:16px 0"><a href="${reviewUrl}" style="background:${accentColor};color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Rate your experience →</a></p>
+
+    <p style="margin:24px 0 0;font-size:14px;color:#94a3b8">— The ${tenantName} team</p>
+  </div>
+</body>
+</html>`;
+}
+
+export function lowRatingAlertSubject(leadName: string | null, rating: number): string {
+  return `⚠️ ${rating}-star feedback${leadName ? ` from ${leadName}` : ""} — needs your attention`;
+}
+
+export function lowRatingAlertHtml({
+  leadName,
+  rating,
+  feedback,
+  aiDraft,
+  dashboardUrl,
+}: {
+  leadName: string | null;
+  rating: number;
+  feedback: string | null;
+  aiDraft: string | null;
+  dashboardUrl: string;
+}): string {
+  const feedbackBlock = feedback
+    ? `<p style="margin:0 0 8px;font-size:13px;color:#64748b">What they said:</p>
+       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:0 8px 8px 0;font-size:14px">${feedback}</blockquote>`
+    : "";
+  const draftBlock = aiDraft
+    ? `<p style="margin:16px 0 8px;font-size:13px;color:#64748b">Suggested reply (review &amp; personalize before sending):</p>
+       <blockquote style="margin:0 0 16px;padding:12px 16px;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 8px 8px 0;font-size:14px">${aiDraft}</blockquote>`
+    : "";
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;margin:0;padding:32px 16px">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e2e8f0">
+    <p style="font-size:22px;font-weight:700;margin:0 0 16px">${rating}-star private feedback</p>
+    <p style="margin:0 0 16px">${leadName ?? "A customer"} rated their experience ${rating}/5. This was caught privately — it has NOT been posted publicly. Reaching out within 24 hours dramatically improves recovery.</p>
+    ${feedbackBlock}
+    ${draftBlock}
+    <p style="margin:16px 0"><a href="${dashboardUrl}" style="background:#F59E0B;color:#0f172a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">Open reviews dashboard →</a></p>
+    <p style="margin:24px 0 0;font-size:14px;color:#94a3b8">— RenovateAI</p>
+  </div>
+</body>
+</html>`;
+}
+
 export function trialReminderSubject(daysLeft: number): string {
   return daysLeft <= 1
     ? "Your RenovateAI trial ends tomorrow"

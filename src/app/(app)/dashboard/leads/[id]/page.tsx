@@ -7,6 +7,7 @@ import { requireTenant } from "@/lib/auth/tenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScopeEstimatePanel } from "./ScopeEstimatePanel";
 import { ProposalPanel } from "./ProposalPanel";
+import { ReviewRequestButton } from "./ReviewRequestButton";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +87,10 @@ export default async function LeadDetailPage({
           <h1 className="text-2xl font-semibold tracking-tight">{lead.fullName ?? "Unknown lead"}</h1>
           <p className="text-sm text-muted-foreground">{lead.email ?? lead.phone ?? "No contact info"}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className={`inline-flex h-2.5 w-2.5 rounded-full ${TEMP_COLOR[lead.temperature ?? "cold"]}`} />
           <span className="text-sm font-medium">Score {lead.score ?? 0}</span>
+          <ReviewRequestButton leadId={lead.id} />
         </div>
       </div>
 

@@ -6,9 +6,10 @@ import {
   scoreLead,
   syncLeadToCrm,
   trialReminders,
+  autoReviewRequests,
 } from "@/inngest/functions";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [processRender, scoreLead, runFollowup, syncLeadToCrm, trialReminders],
+  functions: [processRender, scoreLead, runFollowup, syncLeadToCrm, trialReminders, autoReviewRequests],
 });
