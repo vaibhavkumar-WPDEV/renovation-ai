@@ -80,17 +80,31 @@ export async function POST(req: Request) {
 
   await incrementUsage(tenant.id, "rendersUsed");
 
-  await inngest.send({
-    name: "render/requested",
-    data: {
-      tenantId: tenant.id,
-      renderId: render.id,
-      photoId: photo.id,
-      styleId: parsed.data.styleId,
-      promptJson: { primaryChange: parsed.data.primaryChange },
-      leadId: parsed.data.leadId,
-    },
-  });
+  try {
+    await inngest.send({
+      name: "render/requested",
+      data: {
+        tenantId: tenant.id,
+        renderId: render.id,
+        photoId: photo.id,
+        styleId: parsed.data.styleId,
+        promptJson: { primaryChange: parsed.data.primaryChange },
+        leadId: parsed.data.leadId,
+      },
+    });
+  } catch (err) {
+    // The event IS the render job — without it the row would sit "queued"
+    // forever, so surface the failure instead of stranding the caller.
+    console.error("render/requested event failed", err);
+    await db
+      .update(renders)
+      .set({ status: "failed" })
+      .where(eq(renders.id, render.id));
+    return NextResponse.json(
+      { error: "render_queue_unavailable", message: "Could not queue the render. Try again shortly." },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json(
     { id: render.id, status: "queued", remaining: limit.remaining - 1 },

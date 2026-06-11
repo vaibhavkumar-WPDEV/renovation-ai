@@ -167,7 +167,20 @@ All three currently pass with zero errors/warnings.
 
 ---
 
-## 7. Cross-references
+## 7. Staging verification (2026-06-11)
+
+The full public-API surface was tested live against a real Postgres 16 +
+pgvector database and the production build (`next start`) — 9/9 tests passed,
+including auth rejection, validation, tenant scoping, key revocation, and a
+job-queue-down resilience test. Full results + the $0 staging cost model:
+`docs/STAGING.md`.
+
+Business decision recorded: shared multi-tenant database (Neon), free tier
+during staging; at scale DB cost is funded through plan pricing via the
+existing per-tenant usage metering — no per-customer database installs.
+
+## 8. Cross-references
 
 - Full original product blueprint (market analysis, all 10 AI modules, tech stack rationale, 12-month roadmap): `/root/.claude/plans/https-havencabinetry-com-au-staging-http-glittery-kahan.md`
 - Week-by-week plan and what's next: `docs/ROADMAP.md`
+- Staging setup, cost model, and verified test results: `docs/STAGING.md`

@@ -62,10 +62,14 @@ export async function POST(req: Request) {
 
   await incrementUsage(tenant.id, "leadsReceived");
 
-  await inngest.send({
-    name: "lead/created",
-    data: { tenantId: tenant.id, leadId: lead.id, source: lead.source ?? undefined },
-  });
+  // Best-effort: the lead is already persisted — a follow-up/scoring event
+  // failure must not turn a successful capture into a 500 for the caller.
+  await inngest
+    .send({
+      name: "lead/created",
+      data: { tenantId: tenant.id, leadId: lead.id, source: lead.source ?? undefined },
+    })
+    .catch((err) => console.error("lead/created event failed", err));
 
   return NextResponse.json(
     { id: lead.id, status: "created", overLimit: !limit.allowed },
