@@ -759,6 +759,31 @@ export const auditLog = pgTable(
 );
 
 // =============================================================================
+// Public API keys (partner / Zapier access to /api/v1/*)
+// =============================================================================
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 128 }).notNull(),
+    keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+    keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("api_keys_tenant_idx").on(t.tenantId)],
+);
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+
+// =============================================================================
 // Type exports for convenience
 // =============================================================================
 

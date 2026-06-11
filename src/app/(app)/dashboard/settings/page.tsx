@@ -5,6 +5,7 @@ import { subscriptions, tenantSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { StripePortalButton } from "./StripePortalButton";
 import { PricingRulesForm } from "./PricingRulesForm";
+import { ApiKeysPanel } from "./ApiKeysPanel";
 import { getUsage } from "@/lib/usage/meter";
 import { limitsForPlan, type PlanName } from "@/lib/constants/plans";
 
@@ -178,6 +179,25 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <PricingRulesForm initial={pricingRules} />
+        </CardContent>
+      </Card>
+
+      {/* API keys */}
+      <Card>
+        <CardHeader>
+          <CardTitle>API keys</CardTitle>
+          <CardDescription>
+            Use these to call the public API (<code>/api/v1/leads</code>, <code>/api/v1/renders</code>)
+            from Zapier, Make, or your own integrations. Send as{" "}
+            <code>Authorization: Bearer rk_live_...</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {slug ? (
+            <ApiKeysPanel />
+          ) : (
+            <p className="text-sm text-muted-foreground">Sign in to manage API keys.</p>
+          )}
         </CardContent>
       </Card>
 

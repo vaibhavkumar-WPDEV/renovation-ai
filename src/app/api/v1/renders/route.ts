@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { photoUploads, renders, tenants } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { photoUploads, renders } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { inngest } from "@/inngest/client";
 import { checkLimit, incrementUsage } from "@/lib/usage/meter";
 import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
+import { tenantFromApiKey } from "@/lib/security/apiKeys";
 
 const createRenderSchema = z.object({
-  tenantSlug: z.string(),
+  tenantSlug: z.string().optional(),
   photoId: z.string().uuid(),
   styleId: z.string().uuid().optional(),
   primaryChange: z.string(),
@@ -22,6 +23,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  // Partner API requires a tenant-scoped key — every render costs real money,
+  // so we never trust a client-supplied tenant slug for billing/usage.
+  const tenant = await tenantFromApiKey(req);
+  if (!tenant) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Missing or invalid API key. Pass `Authorization: Bearer rk_live_...`." },
+      { status: 401 },
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = createRenderSchema.safeParse(body);
   if (!parsed.success) {
@@ -29,15 +40,6 @@ export async function POST(req: Request) {
       { error: "Invalid payload", details: parsed.error.flatten() },
       { status: 400 },
     );
-  }
-
-  const [tenant] = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.slug, parsed.data.tenantSlug))
-    .limit(1);
-  if (!tenant) {
-    return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
   const [photo] = await db
@@ -97,12 +99,23 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  const tenant = await tenantFromApiKey(req);
+  if (!tenant) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Missing or invalid API key. Pass `Authorization: Bearer rk_live_...`." },
+      { status: 401 },
+    );
+  }
+
   const url = new URL(req.url);
   const id = url.searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
-  const [render] = await db.select().from(renders).where(eq(renders.id, id));
+  const [render] = await db
+    .select()
+    .from(renders)
+    .where(and(eq(renders.id, id), eq(renders.tenantId, tenant.id)));
   if (!render) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

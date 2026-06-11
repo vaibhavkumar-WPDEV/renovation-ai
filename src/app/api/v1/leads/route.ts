@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { leads, tenants } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { leads } from "@/db/schema";
 import { inngest } from "@/inngest/client";
 import { checkLimit, incrementUsage } from "@/lib/usage/meter";
 import { rateLimit, ipFromRequest } from "@/lib/security/rateLimit";
+import { tenantFromApiKey } from "@/lib/security/apiKeys";
 
 const createLeadSchema = z.object({
-  tenantSlug: z.string(),
+  tenantSlug: z.string().optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
   fullName: z.string().optional(),
@@ -24,6 +24,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  // Partner API requires a tenant-scoped key — prevents anyone from writing
+  // leads into another contractor's pipeline by guessing their slug.
+  const tenant = await tenantFromApiKey(req);
+  if (!tenant) {
+    return NextResponse.json(
+      { error: "Unauthorized", message: "Missing or invalid API key. Pass `Authorization: Bearer rk_live_...`." },
+      { status: 401 },
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = createLeadSchema.safeParse(body);
   if (!parsed.success) {
@@ -31,15 +41,6 @@ export async function POST(req: Request) {
       { error: "Invalid payload", details: parsed.error.flatten() },
       { status: 400 },
     );
-  }
-
-  const [tenant] = await db
-    .select()
-    .from(tenants)
-    .where(eq(tenants.slug, parsed.data.tenantSlug))
-    .limit(1);
-  if (!tenant) {
-    return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
   // Enforce monthly lead-capture limit. We still 201 the lead so we never lose
